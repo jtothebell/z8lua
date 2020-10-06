@@ -165,7 +165,11 @@ static lua_Number lua_strx2number (const char *s, char **endptr) {
 #endif
 
 
-static lua_Number readany (const char **s, lua_Number r, int *count, int base, int max = INT_MAX) {
+static lua_Number readany (const char **s, lua_Number r, int *count, int base, int max) {
+  if (max < 0) {
+    max = INT_MAX;
+  }
+  
   for (; lisxdigit(cast_uchar(**s)); (*s)++, max--) {
     if (max > 0) {
       int d = luaO_hexavalue(cast_uchar(**s));
@@ -192,7 +196,7 @@ static lua_Number lua_strany2number (const char *s, char **endptr, int base) {
                 || (base == 16 && *(s + 1) != 'x' && *(s + 1) != 'X'))
     return 0.0;  /* invalid format (no '0b' or '0x') */
   s += 2;  /* skip '0x' or '0b' */
-  r = readany(&s, r, &i, base);  /* read integer part */
+  r = readany(&s, r, &i, base, INT_MAX);  /* read integer part */
   if (*s == '.') {
     s++;  /* skip dot */
     f = readany(&s, f, &e, base, base == 2 ? 16 : 4);  /* read fractional part */
@@ -200,7 +204,7 @@ static lua_Number lua_strany2number (const char *s, char **endptr, int base) {
   if (i == 0 && e == 0)
     return 0.0;  /* invalid format (no digit) */
   *endptr = cast(char *, s);  /* valid up to here */
-  r = lua_Number::frombits(r.bits() | (uint32_t)f.bits() >> (base == 2 ? e : e * 4));
+  r = fix16_from_dbl(r | (uint32_t)f >> (base == 2 ? e : e * 4));
   return neg ? -r : r;
 }
 
@@ -219,7 +223,6 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
   while (lisspace(cast_uchar(*endptr))) endptr++;
   return (endptr == s + len);  /* OK if no trailing characters */
 }
-
 
 
 static void pushstr (lua_State *L, const char *str, size_t l) {

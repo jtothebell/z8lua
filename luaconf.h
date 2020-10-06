@@ -546,8 +546,7 @@
 */
 
 
-#include <cstdint> // for int16_t
-#include "fix32.h" // for z8::fix32
+#include "fix16.h"
 
 #undef LUA_USE_STRTODHEX
 #undef LUA_USE_LONGLONG
@@ -555,11 +554,15 @@
 #undef LUA_NUMBER_DOUBLE
 #undef LUA_NUMBER
 #undef LUA_IEEE754TRICK
-#undef LUA_MSASMTRICK
 #undef LUAI_UACNUMBER
+#undef LUA_NUMBER_FMT
+#undef LUA_MSASMTRICK
 
 #undef lua_number2str
 #undef l_mathop
+#undef lua_str2number
+#undef luai_nummul
+#undef luai_numdiv
 
 #if defined(LUA_USE_READLINE)
 #define LUA_PROMPT	"\x01\x1b[1;95m\x02zepto8\x01\x1b[0m\x02> "
@@ -571,38 +574,58 @@
 
 #define LUA_PROGNAME	"z8lua"
 #define LUA_INTEGER	int16_t
-#define LUA_NUMBER	z8::fix32
-#define LUAI_UACNUMBER	z8::fix32
-#define l_mathop(x)	(z8::fix32::x)
+#define LUA_NUMBER fix16_t
+#define LUAI_UACNUMBER	fix16_t
+#define l_mathop(x)	(x)
 
-#define luai_numidiv(L,a,b)	(l_mathop(floor)((a)/(b)))
+#define LUA_NUMBER_FMT		"%1.4g"
+
+#define lua_number2str(s, n) sprintf((s), LUA_NUMBER_FMT, (fix16_to_dbl(n)))
+#define lua_str2number(s,p)	fix16_from_dbl(strtod((s), (p)))
+
+#define luai_nummul(L,a,b)	(fix16_mul((a), (b)))
+#define luai_numdiv(L,a,b)	(fix16_div((a), (b)))
+
+static inline fix16_t fix16_lshr(fix16_t x, int y)
+{
+    // If y is negative, use << instead.
+    return y < 0 ? x << -y : y >= 32 ? 0 : (x) >> y;
+}
+
+static inline fix16_t fix16_rotl(fix16_t x, int y)
+{
+    y &= 0x1f;
+    return (x << y) | (x >> (32 - y));
+}
+
+static inline fix16_t fix16_rotr(fix16_t x, int y)
+{
+    y &= 0x1f;
+    return (x >> y) | (x << (32 - y));
+}
+
+#define luai_numidiv(L,a,b)	(fix16_floor(((a)/(b))))
 #define luai_numband(L,a,b)	((a)&(b))
 #define luai_numbor(L,a,b)	((a)|(b))
 #define luai_numbxor(L,a,b)	((a)^(b))
-#define luai_numshl(L,a,b)	((a)<<int((b)))
-#define luai_numshr(L,a,b)	((a)>>int((b)))
-#define luai_numlshr(L,a,b)	(l_mathop(lshr)((a),int((b))))
-#define luai_numrotl(L,a,b)	(l_mathop(rotl)((a),int((b))))
-#define luai_numrotr(L,a,b)	(l_mathop(rotr)((a),int((b))))
+#define luai_numshl(L,a,b)	((a)<<(b))
+#define luai_numshr(L,a,b)	((a)>>(b))
+#define luai_numlshr(L,a,b)	(fix16_lshr((a),(b)))
+#define luai_numrotl(L,a,b)	(fix16_rotl((a),(b)))
+#define luai_numrotr(L,a,b)	(fix16_rotr((a),(b)))
 #define luai_numbnot(L,a)	(~(a))
 #define luai_numpeek(L,a)	(lua_peek(L,a,1))
 #define luai_numpeek2(L,a)	(lua_peek(L,a,2))
 #define luai_numpeek4(L,a)	(lua_peek(L,a,4))
 
+/*
 #define lua_number2str(s,n) [&]() { \
-  int i = sprintf(s, "%1.4f", (double)n); \
+  int i = sprintf(s, "%1.4f", fix16_to_dbl(n)); \
   while (i > 0 && s[i - 1] == '0') s[--i] = '\0'; \
   if (i > 0 && s[i - 1] == '.') s[--i] = '\0'; \
   return i; }()
+  */
 
-#define luai_hashnum(i,n) (i = (n * z8::fix32::frombits(2654435769u)).bits())
-
-static inline z8::fix32 operator/(z8::fix32 x, int y) { return x / z8::fix32(y); }
-static inline z8::fix32 operator+(int x, z8::fix32 y) { return z8::fix32(x) + y; }
-
-static inline bool operator==(z8::fix32 x, int y) { return x == z8::fix32(y); }
-static inline bool operator <(z8::fix32 x, int y) { return x  < z8::fix32(y); }
-static inline bool operator <(int x, z8::fix32 y) { return z8::fix32(x)  < y; }
+#define luai_hashnum(i,n) (i = n * 2654435769u)
 
 #endif
-

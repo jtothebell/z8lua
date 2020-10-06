@@ -1,3 +1,5 @@
 *.o
 *.a
 z8lua
+lua
+.vscode/
