@@ -14,6 +14,8 @@
 #define lpico8lib_c
 #define LUA_LIB
 
+#include <string.h>
+
 #include "lua.h"
 
 #include "lauxlib.h"
@@ -135,7 +137,7 @@ static int pico8_rotr(lua_State *l) {
 static int pico8_tostr(lua_State *l) {
     char buffer[20];
     char const *s = buffer;
-    auto hex = lua_toboolean(l, 2);
+    int hex = lua_toboolean(l, 2);
     // PICO-8 0.2.1 changelog: tostr() returns nil (used to return "[nil]")
     if (lua_isnone(l, 1))
         return 0;
@@ -212,7 +214,7 @@ static int pico8_split(lua_State *l) {
         return 0;
     lua_newtable(l);
     char needle = lua_isstring(l, 2) ? *lua_tostring(l, 2) : ',';
-    auto convert = lua_isnone(l, 3) || lua_toboolean(l, 3);
+    int convert = lua_isnone(l, 3) || lua_toboolean(l, 3);
     char const *end = haystack + hlen + !!needle;
     for (char const *parser = haystack; parser < end; ) {
         lua_Number num;

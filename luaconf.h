@@ -547,6 +547,8 @@
 
 
 #include "fix16.h"
+#include <stdio.h>
+#include <math.h>
 
 #undef LUA_USE_STRTODHEX
 #undef LUA_USE_LONGLONG
@@ -563,6 +565,7 @@
 #undef lua_str2number
 #undef luai_nummul
 #undef luai_numdiv
+#undef luai_numpow
 
 #if defined(LUA_USE_READLINE)
 #define LUA_PROMPT	"\x01\x1b[1;95m\x02zepto8\x01\x1b[0m\x02> "
@@ -576,15 +579,16 @@
 #define LUA_INTEGER	int16_t
 #define LUA_NUMBER fix16_t
 #define LUAI_UACNUMBER	fix16_t
-#define l_mathop(x)	(x)
+//#define l_mathop(x)	(x)
 
-#define LUA_NUMBER_FMT		"%1.4g"
+#define LUA_NUMBER_FMT		"%1.4f"
 
-#define lua_number2str(s, n) sprintf((s), LUA_NUMBER_FMT, (fix16_to_dbl(n)))
+//#define lua_number2str(s, n) sprintf((s), LUA_NUMBER_FMT, (fix16_to_dbl(n)))
 #define lua_str2number(s,p)	fix16_from_dbl(strtod((s), (p)))
 
 #define luai_nummul(L,a,b)	(fix16_mul((a), (b)))
 #define luai_numdiv(L,a,b)	(fix16_div((a), (b)))
+#define luai_numpow(L,a,b)	(fix16_from_dbl(pow(fix16_to_dbl(a),fix16_to_dbl(b))))
 
 static inline fix16_t fix16_lshr(fix16_t x, int y)
 {
@@ -618,13 +622,17 @@ static inline fix16_t fix16_rotr(fix16_t x, int y)
 #define luai_numpeek2(L,a)	(lua_peek(L,a,2))
 #define luai_numpeek4(L,a)	(lua_peek(L,a,4))
 
-/*
-#define lua_number2str(s,n) [&]() { \
-  int i = sprintf(s, "%1.4f", fix16_to_dbl(n)); \
-  while (i > 0 && s[i - 1] == '0') s[--i] = '\0'; \
-  if (i > 0 && s[i - 1] == '.') s[--i] = '\0'; \
-  return i; }()
-  */
+
+static inline int number2str_remtrailing0(char * s, fix16_t n) 
+{
+	int i = sprintf(s, "%1.4f", fix16_to_dbl(n));
+	while (i > 0 && s[i - 1] == '0') s[--i] = '\0';
+	if (i > 0 && s[i - 1] == '.') s[--i] = '\0';
+	return i;
+}
+
+#define lua_number2str(s,n) (number2str_remtrailing0((s),(n)))
+
 
 #define luai_hashnum(i,n) (i = n * 2654435769u)
 
