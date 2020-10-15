@@ -608,7 +608,7 @@ static inline fix16_t fix16_rotr(fix16_t x, int y)
     return (x >> y) | (x << (32 - y));
 }
 
-#define luai_numidiv(L,a,b)	(fix16_floor(((a)/(b))))
+#define luai_numidiv(L,a,b)	(fix16_floor(fix16_div((a), (b))))
 #define luai_numband(L,a,b)	((a)&(b))
 #define luai_numbor(L,a,b)	((a)|(b))
 #define luai_numbxor(L,a,b)	((a)^(b))
