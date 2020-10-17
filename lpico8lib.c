@@ -22,7 +22,8 @@
 #include "llimits.h"
 #include "lobject.h"
 
-#define TAU 6.2831853071795864769252867665590057683936
+#define FIX16_TAU 411774
+#define FIX16_THREEFOURTHS 0x00001100
 
 static int pico8_max(lua_State *l) {
     lua_pushnumber(l, fix16_max(lua_tonumber(l, 1), lua_tonumber(l, 2)));
@@ -54,28 +55,39 @@ static int pico8_flr(lua_State *l) {
 }
 
 static int pico8_cos(lua_State *l) {
-    lua_pushnumber(l, cast_num(fix16_cos(-TAU * (double)lua_tonumber(l, 1))));
+    lua_pushnumber(l, fix16_cos(fix16_mul(-FIX16_TAU, lua_tonumber(l, 1))));
     return 1;
 }
 
 static int pico8_sin(lua_State *l) {
-    lua_pushnumber(l, cast_num(fix16_sin(-TAU * (double)lua_tonumber(l, 1))));
+    lua_pushnumber(l, fix16_sin(fix16_mul(-FIX16_TAU, lua_tonumber(l, 1))));
     return 1;
 }
 
 static int pico8_atan2(lua_State *l) {
     lua_Number x = lua_tonumber(l, 1);
     lua_Number y = lua_tonumber(l, 2);
+
     // This could simply be atan2(-y,x) but since PICO-8 decided that
     // atan2(0,0) = 0.75 we need to do the same in our version.
-    double a = 0.75 + fix16_atan2((double)x, (double)y) / TAU;
-    lua_pushnumber(l, cast_num(a >= 1 ? a - 1 : a));
+
+    //TODO: this appears to still be partially broken...
+    //figure out to get rid of this ugly special case, and make a constant for .75
+    if (x == 0 && y == 0){
+        lua_pushnumber(l, fix16_from_dbl(.25));
+    }
+    else {
+        fix16_t a = fix16_add(fix16_from_dbl(.75), fix16_div(fix16_atan2(x, y), FIX16_TAU));
+        lua_pushnumber(l, a >= 1 ? a - 1 : a);
+    }
+    
+    
     return 1;
 }
 
 static int pico8_sqrt(lua_State *l) {
     lua_Number x = lua_tonumber(l, 1);
-    lua_pushnumber(l, cast_num(x >= 0 ? fix16_sqrt((double)x) : 0));
+    lua_pushnumber(l, x >= 0 ? fix16_sqrt(x) : 0);
     return 1;
 }
 
@@ -85,7 +97,7 @@ static int pico8_abs(lua_State *l) {
 }
 
 static int pico8_sgn(lua_State *l) {
-    lua_pushnumber(l, cast_num(lua_tonumber(l, 1) >= 0 ? 1.0 : -1.0));
+    lua_pushnumber(l, lua_tonumber(l, 1) >= 0 ? fix16_one : fix16_from_int(-1));
     return 1;
 }
 
