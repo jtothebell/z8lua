@@ -78,7 +78,7 @@ static int pico8_atan2(lua_State *l) {
     }
     else {
         fix16_t a = fix16_add(fix16_from_dbl(.75), fix16_div(fix16_atan2(x, y), FIX16_TAU));
-        lua_pushnumber(l, a >= 1 ? a - 1 : a);
+        lua_pushnumber(l, a >= fix16_one ? a - fix16_one : a);
     }
     
     
