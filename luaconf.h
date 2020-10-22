@@ -579,7 +579,16 @@
 #define LUA_INTEGER	int16_t
 #define LUA_NUMBER fix16_t
 #define LUAI_UACNUMBER	fix16_t
-//#define l_mathop(x)	(x)
+
+
+static inline fix16_t noop_mathop()
+{
+    return 0;
+}
+//this is only called from the lua math lib, which isn't loaded for pico 8
+//but breaks compilation using devkitarm (nintendo homebrew toolchain)
+//so I'm just stubbing it out to a method that does nothing
+#define l_mathop(x)	noop_mathop
 
 #define LUA_NUMBER_FMT		"%1.4f"
 
