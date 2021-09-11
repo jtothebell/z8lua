@@ -441,8 +441,8 @@
 #if defined(LUA_CORE)
 #define luai_numadd(L,a,b)	((a)+(b))
 #define luai_numsub(L,a,b)	((a)-(b))
-#define luai_nummul(L,a,b)	((a)*(b))
-#define luai_numdiv(L,a,b)	((a)/(b))
+#define luai_nummul(L,a,b)	(fix16_mul((a), (b)))
+#define luai_numdiv(L,a,b)	(fix16_div((a), (b)))
 #define luai_numunm(L,a)	(-(a))
 #define luai_numeq(a,b)		((a)==(b))
 #define luai_numlt(L,a,b)	((a)<(b))
@@ -574,7 +574,7 @@
 #define LUA_NUMBER	fix16_t
 #define LUAI_UACNUMBER	fix16_t
 
-#define luai_numidiv(L,a,b)	((fix16_to_int((a))/fix16_to_int((b))))
+#define luai_numidiv(L,a,b)	(fix16_floor(fix16_div((a),(b))))
 #define luai_numband(L,a,b)	((a)&(b))
 #define luai_numbor(L,a,b)	((a)|(b))
 #define luai_numbxor(L,a,b)	((a)^(b))
