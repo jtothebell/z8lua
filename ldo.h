@@ -19,8 +19,11 @@
 
 #define incr_top(L) {L->top++; luaD_checkstack(L,0);}
 
-#define savestack(L,p)		((char *)(p) - (char *)L->stack)
-#define restorestack(L,n)	((TValue *)((char *)L->stack + (n)))
+//http://lua-users.org/lists/lua-l/2012-02/msg00245.html
+//#define savestack(L,p)		((char *)(p) - (char *)L->stack)
+//#define restorestack(L,n)	((TValue *)((char *)L->stack + (n)))
+#define savestack(L,p)         ((p) - (L)->stack)
+#define restorestack(L,n)      ((L)->stack + (n))
 
 
 /* type of protected functions, to be ran by `runprotected' */

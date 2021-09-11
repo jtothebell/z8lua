@@ -11,13 +11,11 @@
 //
 
 
-#include <cmath>
-#include <cctype>
-#include <cstring>
-#include <algorithm>
-
 #define lpico8lib_c
 #define LUA_LIB
+
+#include "math.h"
+#include <string.h>
 
 #include "lua.h"
 
@@ -28,12 +26,12 @@
 #define TAU 6.2831853071795864769252867665590057683936
 
 static int pico8_max(lua_State *l) {
-    lua_pushnumber(l, lua_Number::max(lua_tonumber(l, 1), lua_tonumber(l, 2)));
+    lua_pushnumber(l, fix16_max(lua_tonumber(l, 1), lua_tonumber(l, 2)));
     return 1;
 }
 
 static int pico8_min(lua_State *l) {
-    lua_pushnumber(l, lua_Number::min(lua_tonumber(l, 1), lua_tonumber(l, 2)));
+    lua_pushnumber(l, fix16_min(lua_tonumber(l, 1), lua_tonumber(l, 2)));
     return 1;
 }
 
@@ -41,18 +39,18 @@ static int pico8_mid(lua_State *l) {
     lua_Number x = lua_tonumber(l, 1);
     lua_Number y = lua_tonumber(l, 2);
     lua_Number z = lua_tonumber(l, 3);
-    lua_pushnumber(l, x > y ? y > z ? y : lua_Number::min(x, z)
-                            : x > z ? x : lua_Number::min(y, z));
+    lua_pushnumber(l, x > y ? y > z ? y : fix16_min(x, z)
+                            : x > z ? x : fix16_min(y, z));
     return 1;
 }
 
 static int pico8_ceil(lua_State *l) {
-    lua_pushnumber(l, lua_Number::ceil(lua_tonumber(l, 1)));
+    lua_pushnumber(l, fix16_ceil(lua_tonumber(l, 1)));
     return 1;
 }
 
 static int pico8_flr(lua_State *l) {
-    lua_pushnumber(l, lua_Number::floor(lua_tonumber(l, 1)));
+    lua_pushnumber(l, fix16_floor(lua_tonumber(l, 1)));
     return 1;
 }
 
@@ -60,12 +58,12 @@ static int pico8_flr(lua_State *l) {
 //with numbers > 1 (treats them as ints?)
 //would be better to just replace these with lookup tables using the fractional part
 static int pico8_cos(lua_State *l) {
-    lua_pushnumber(l, cast_num(std::cos(-TAU * (double)(lua_Number::modf(lua_tonumber(l, 1))))));
+    lua_pushnumber(l, cast_num(cos(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
     return 1;
 }
 
 static int pico8_sin(lua_State *l) {
-    lua_pushnumber(l, cast_num(std::sin(-TAU * (double)(lua_Number::modf(lua_tonumber(l, 1))))));
+    lua_pushnumber(l, cast_num(sin(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
     return 1;
 }
 
@@ -74,24 +72,24 @@ static int pico8_atan2(lua_State *l) {
     lua_Number y = lua_tonumber(l, 2);
     // This could simply be atan2(-y,x) but since PICO-8 decided that
     // atan2(0,0) = 0.75 we need to do the same in our version.
-    double a = 0.75 + std::atan2((double)x, (double)y) / TAU;
+    double a = 0.75 + atan2(fix16_to_dbl(x), fix16_to_dbl(y)) / TAU;
     lua_pushnumber(l, cast_num(a >= 1 ? a - 1 : a));
     return 1;
 }
 
 static int pico8_sqrt(lua_State *l) {
     lua_Number x = lua_tonumber(l, 1);
-    lua_pushnumber(l, cast_num(x.bits() >= 0 ? std::sqrt((double)x) : 0));
+    lua_pushnumber(l, cast_num(x >= 0 ? fix16_sqrt(x) : 0));
     return 1;
 }
 
 static int pico8_abs(lua_State *l) {
-    lua_pushnumber(l, lua_Number::abs(lua_tonumber(l, 1)));
+    lua_pushnumber(l, fix16_abs(lua_tonumber(l, 1)));
     return 1;
 }
 
 static int pico8_sgn(lua_State *l) {
-    lua_pushnumber(l, cast_num(lua_tonumber(l, 1).bits() >= 0 ? 1.0 : -1.0));
+    lua_pushnumber(l, cast_num(lua_tonumber(l, 1) >= 0 ? 1.0 : -1.0));
     return 1;
 }
 
@@ -116,34 +114,34 @@ static int pico8_bnot(lua_State *l) {
 }
 
 static int pico8_shl(lua_State *l) {
-    lua_pushnumber(l, lua_tonumber(l, 1) << int(lua_tonumber(l, 2)));
+    lua_pushnumber(l, lua_tonumber(l, 1) << (lua_tonumber(l, 2)));
     return 1;
 }
 
 static int pico8_lshr(lua_State *l) {
-    lua_pushnumber(l, lua_Number::lshr(lua_tonumber(l, 1), int(lua_tonumber(l, 2))));
+    lua_pushnumber(l, fix16_lshr(lua_tonumber(l, 1), fix16_to_int(lua_tonumber(l, 2))));
     return 1;
 }
 
 static int pico8_shr(lua_State *l) {
-    lua_pushnumber(l, lua_tonumber(l, 1) >> int(lua_tonumber(l, 2)));
+    lua_pushnumber(l, lua_tonumber(l, 1) >> fix16_to_int(lua_tonumber(l, 2)));
     return 1;
 }
 
 static int pico8_rotl(lua_State *l) {
-    lua_pushnumber(l, lua_Number::rotl(lua_tonumber(l, 1), int(lua_tonumber(l, 2))));
+    lua_pushnumber(l, fix16_rotl(lua_tonumber(l, 1), fix16_to_int(lua_tonumber(l, 2))));
     return 1;
 }
 
 static int pico8_rotr(lua_State *l) {
-    lua_pushnumber(l, lua_Number::rotr(lua_tonumber(l, 1), int(lua_tonumber(l, 2))));
+    lua_pushnumber(l, fix16_rotr(lua_tonumber(l, 1), fix16_to_int(lua_tonumber(l, 2))));
     return 1;
 }
 
 static int pico8_tostr(lua_State *l) {
     char buffer[20];
     char const *s = buffer;
-    auto hex = lua_toboolean(l, 2);
+    int hex = lua_toboolean(l, 2);
     switch (lua_type(l, 1))
     {
         case LUA_TNONE:
@@ -153,7 +151,7 @@ static int pico8_tostr(lua_State *l) {
         case LUA_TNUMBER: {
             lua_Number x = lua_tonumber(l, 1);
             if (hex) {
-                uint32_t b = (uint32_t)x.bits();
+                uint32_t b = (uint32_t)x;
                 sprintf(buffer, "0x%04x.%04x", (b >> 16) & 0xffff, b & 0xffff);
             } else {
                 lua_number2str(buffer, x);
@@ -171,7 +169,9 @@ static int pico8_tostr(lua_State *l) {
                 luaL_tolstring(l, 1, NULL);
                 return 1;
             }
-            [[fallthrough]];
+            //[[fallthrough]];
+            sprintf(buffer, "[%s]", luaL_typename(l, 1)); 
+            break;
         case LUA_TFUNCTION:
             // PICO-8 0.1.12d changelog: “tostr(x,true) can also be used to view
             // the hex value of functions and tables (uses Lua's tostring)”
@@ -179,7 +179,9 @@ static int pico8_tostr(lua_State *l) {
                 luaL_tolstring(l, 1, NULL);
                 return 1;
             }
-            [[fallthrough]];
+            //[[fallthrough]];
+            sprintf(buffer, "[%s]", luaL_typename(l, 1));
+            break;
         default: sprintf(buffer, "[%s]", luaL_typename(l, 1)); break;
     }
     lua_pushstring(l, s);
@@ -219,11 +221,11 @@ static int pico8_ord(lua_State *l) {
     if (!lua_isnone(l, 2)) {
         if (!lua_isnumber(l, 2))
             return 0;
-        n = int(lua_tonumber(l, 2)) - 1;
+        n = fix16_to_int(lua_tonumber(l, 2)) - 1;
     }
-    if (n < 0 || size_t(n) >= len)
+    if (n < 0 || (size_t)(n) >= len)
         return 0;
-    lua_pushnumber(l, uint8_t(s[n]));
+    lua_pushnumber(l, (uint8_t)fix16_to_int(s[n]));
     return 1;
 }
 
@@ -241,13 +243,13 @@ static int pico8_split(lua_State *l) {
     int size = 0;
     char needle = ',';
     if (lua_isnumber(l, 2)) {
-        size = int(lua_tonumber(l, 2));
+        size = fix16_to_int(lua_tonumber(l, 2));
         if (size <= 0)
             size = 1;
     } else if (lua_isstring(l, 2)) {
         needle = *lua_tostring(l, 2);
     }
-    auto convert = lua_isnone(l, 3) || lua_toboolean(l, 3);
+    int convert = lua_isnone(l, 3) || lua_toboolean(l, 3);
     char const *end = haystack + hlen + (!size && needle);
     for (char const *parser = haystack; parser < end; ) {
         lua_Number num;
@@ -262,7 +264,7 @@ static int pico8_split(lua_State *l) {
         else
             lua_pushstring(l, parser);
         *(char *)next = saved;
-        lua_rawseti(l, -2, int(++count));
+        lua_rawseti(l, -2, (int)(++count));
         parser = next + (!size && needle);
     }
     return 1;

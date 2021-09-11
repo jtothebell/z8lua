@@ -573,7 +573,7 @@ write_size_t(Info *info, size_t value) {
 
 static void
 write_lua_Number(Info *info, lua_Number value) {
-  write_int32_t(info, value.bits());
+  write_int32_t(info, value);
 }
 
 /* Note that Lua only ever uses 32 bits of the Instruction type, so we can
@@ -583,7 +583,7 @@ write_lua_Number(Info *info, lua_Number value) {
 static void
 write_Instruction(Info *info, Instruction value) {
   if (sizeof(Instruction) == sizeof(uint32_t)) {
-    write_uint32_t(info, value);
+    write_uint32_t(info, (int32_t)value);
   }
   else {
     uint32_t pvalue = (uint32_t)value;
@@ -733,7 +733,7 @@ read_size_t(Info *info) {
 
 static lua_Number
 read_lua_Number(Info *info) {
-  return lua_Number::frombits(read_int32_t(info));
+  return (lua_Number)(read_int32_t(info));
 }
 
 static Instruction
