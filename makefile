@@ -17,7 +17,7 @@ LOCAL = $(CWARNS)
 
 
 #CC= g++
-CFLAGS= -Wall $(MYCFLAGS) -O2
+CFLAGS= -Wall $(MYCFLAGS) -g #-O2
 AR= ar rcu
 RANLIB= ranlib
 RM= rm -f
