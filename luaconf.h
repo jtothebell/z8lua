@@ -419,7 +419,7 @@
 ** systems, you can leave 'lua_strx2number' undefined and Lua will
 ** provide its own implementation.
 */
-#define lua_str2number(s,p)	strtod((s), (p))
+#define lua_str2number(s,p)	fix16_from_dbl(strtod((s), (p)))
 
 #if defined(LUA_USE_STRTODHEX)
 #define lua_strx2number(s,p)	strtod((s), (p))
