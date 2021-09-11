@@ -573,7 +573,6 @@
 #define LUA_INTEGER	int16_t
 #define LUA_NUMBER	fix16_t
 #define LUAI_UACNUMBER	fix16_t
-//define l_mathop(x)	(z8::fix32::x)
 
 #define luai_numidiv(L,a,b)	((fix16_to_int((a))/fix16_to_int((b))))
 #define luai_numband(L,a,b)	((a)&(b))
@@ -589,8 +588,16 @@
 #define luai_numpeek2(L,a)	(lua_peek(L,a,2))
 #define luai_numpeek4(L,a)	(lua_peek(L,a,4))
 
+#include <stdio.h>
 
-#define lua_number2str(s,n) sprintf((s), "%1.4f", fix16_to_dbl((n)))
+static inline int print_fix16(char *s, fix16_t n) {
+	int i = sprintf((s), "%1.4f", fix16_to_dbl((n)));
+  	while (i > 0 && s[i - 1] == '0') s[--i] = '\0';
+  	if (i > 0 && s[i - 1] == '.') s[--i] = '\0';
+  	return i; 
+}
+
+#define lua_number2str(s,n) (print_fix16((s), (n)))
 
 /*
 #define lua_number2str(s,n) [&]() { \
