@@ -177,10 +177,6 @@ static lua_Number readany (const char **s, lua_Number r, int *count, int base, i
   return r;
 }
 
-static lua_Number readany_defmax (const char **s, lua_Number r, int *count, int base) {
-  return readany(s, r, count, base, INT_MAX);
-}
-
 
 /*
 ** convert an hexadecimal or binary numeric string to a number
@@ -196,7 +192,7 @@ static lua_Number lua_strany2number (const char *s, char **endptr, int base) {
                 || (base == 16 && *(s + 1) != 'x' && *(s + 1) != 'X'))
     return 0.0;  /* invalid format (no '0b' or '0x') */
   s += 2;  /* skip '0x' or '0b' */
-  r = readany_defmax(&s, r, &i, base);  /* read integer part */
+  r = readany(&s, r, &i, base, INT_MAX);  /* read integer part */
   if (*s == '.') {
     s++;  /* skip dot */
     f = readany(&s, f, &e, base, base == 2 ? 16 : 4);  /* read fractional part */
@@ -204,7 +200,7 @@ static lua_Number lua_strany2number (const char *s, char **endptr, int base) {
   if (i == 0 && e == 0)
     return 0.0;  /* invalid format (no digit) */
   *endptr = cast(char *, s);  /* valid up to here */
-  r = (r | (uint32_t)f >> (base == 2 ? e : e * 4));
+  r = (r << 16 | (f << (base == 2 ? 16 - e : 16 - e * 4)));
   return neg ? -r : r;
 }
 
