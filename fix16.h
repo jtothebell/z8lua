@@ -361,7 +361,7 @@ static inline uint32_t fix_abs(fix16_t in)
 
 #ifdef __cplusplus
 }
-#include "fix16.hpp"
+//#include "fix16.hpp"
 #endif
 
 #endif
