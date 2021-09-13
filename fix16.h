@@ -24,6 +24,8 @@ extern "C"
 #include <stdint.h>
 #include <math.h>
 
+#define FIXMATH_NO_ROUNDING
+
 typedef int32_t fix16_t;
 
 static const fix16_t FOUR_DIV_PI  = 0x145F3;            /*!< Fix16 value of 4/PI */
