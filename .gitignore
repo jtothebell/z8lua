@@ -1,3 +1,4 @@
 *.o
 *.a
 z8lua
+*.DS_Store
