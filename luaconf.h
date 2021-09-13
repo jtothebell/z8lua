@@ -588,6 +588,9 @@
 #define luai_numpeek2(L,a)	(lua_peek(L,a,2))
 #define luai_numpeek4(L,a)	(lua_peek(L,a,4))
 
+#define lua_number2int(i,n)	((i)=(int)(fix16_to_int(n)))
+#define lua_number2integer(i,n)	((i)=(lua_Integer)(fix16_to_int((n))))
+
 #include <stdio.h>
 
 static inline int print_fix16(char *s, fix16_t n) {
