@@ -489,7 +489,8 @@ LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
 
 LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
   lua_lock(L);
-  setnvalue(L->top, cast_num(n));
+  //setnvalue(L->top, cast_num(n));
+  setnvalue(L->top, fix16_from_int(n));
   api_incr_top(L);
   lua_unlock(L);
 }
