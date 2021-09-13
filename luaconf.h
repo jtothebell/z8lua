@@ -574,6 +574,8 @@
 #define LUA_NUMBER	fix16_t
 #define LUAI_UACNUMBER	fix16_t
 
+#define FIXMATH_NO_ROUNDING
+
 #define luai_numidiv(L,a,b)	(fix16_floor(fix16_div((a),(b))))
 #define luai_numband(L,a,b)	((a)&(b))
 #define luai_numbor(L,a,b)	((a)|(b))
