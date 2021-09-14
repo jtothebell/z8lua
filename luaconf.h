@@ -590,6 +590,7 @@
 
 #define lua_number2int(i,n)	((i)=(int)(fix16_to_int(n)))
 #define lua_number2integer(i,n)	((i)=(lua_Integer)(fix16_to_int((n))))
+#define lua_number2unsigned(i,n)	((i)=(lua_Unsigned)(fix16_to_int((n))))
 
 #include <stdio.h>
 
