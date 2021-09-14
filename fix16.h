@@ -168,9 +168,9 @@ static inline fix16_t fix16_pow_int(fix16_t x, int y) {
 
 static inline fix16_t fix16_pow(fix16_t x, fix16_t y) {
 	if ((y & 0xffff0000) == (uint32_t)y) {
-		return pow(x, (int)y);
+		return fix16_pow_int(x, fix16_to_int(y));
 	}
-	return fix16_from_dbl(pow(fix16_to_dbl(x), fix16_to_dbl(y))); 
+	return fix16_from_dbl( pow(fix16_to_dbl(x), fix16_to_dbl(y))); 
 }
 
 static inline fix16_t fix16_modf(fix16_t x) { return x & 0x0000ffff; }
