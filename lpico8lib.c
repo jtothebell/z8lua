@@ -58,12 +58,13 @@ static int pico8_flr(lua_State *l) {
 //with numbers > 1 (treats them as ints?)
 //would be better to just replace these with lookup tables using the fractional part
 static int pico8_cos(lua_State *l) {
-    lua_pushnumber(l, cast_num(cos(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
+    lua_pushnumber(l, fix16_from_dbl(cos(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
     return 1;
 }
 
 static int pico8_sin(lua_State *l) {
-    lua_pushnumber(l, cast_num(sin(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
+    
+    lua_pushnumber(l, fix16_from_dbl(sin(-TAU * fix16_to_dbl(fix16_modf(lua_tonumber(l, 1))))));
     return 1;
 }
 
@@ -73,13 +74,13 @@ static int pico8_atan2(lua_State *l) {
     // This could simply be atan2(-y,x) but since PICO-8 decided that
     // atan2(0,0) = 0.75 we need to do the same in our version.
     double a = 0.75 + atan2(fix16_to_dbl(x), fix16_to_dbl(y)) / TAU;
-    lua_pushnumber(l, cast_num(a >= 1 ? a - 1 : a));
+    lua_pushnumber(l, fix16_from_dbl(a >= 1 ? a - 1 : a));
     return 1;
 }
 
 static int pico8_sqrt(lua_State *l) {
     lua_Number x = lua_tonumber(l, 1);
-    lua_pushnumber(l, cast_num(x >= 0 ? fix16_sqrt(x) : 0));
+    lua_pushnumber(l, fix16_from_dbl(x >= 0 ? fix16_sqrt(x) : 0));
     return 1;
 }
 
@@ -89,7 +90,7 @@ static int pico8_abs(lua_State *l) {
 }
 
 static int pico8_sgn(lua_State *l) {
-    lua_pushnumber(l, cast_num(lua_tonumber(l, 1) >= 0 ? 1.0 : -1.0));
+    lua_pushnumber(l, cast_num(lua_tonumber(l, 1) >= 0 ? fix16_one : -fix16_one));
     return 1;
 }
 
