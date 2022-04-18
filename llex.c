@@ -318,6 +318,43 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
                                      luaZ_bufflen(ls->buff) - 2*(2 + sep));
 }
 
+//modified from read_long_string, but allows nesting to match pico-8
+static void read_long_comment (LexState *ls, int sep) {
+  save_and_next(ls);  /* skip 2nd `[' */
+  if (currIsNewline(ls))  /* string starts with a newline? */
+    inclinenumber(ls);  /* skip it */
+  for (;;) {
+    switch (ls->current) {
+      case EOZ:
+        lexerror(ls, "unfinished long comment", TK_EOS);
+        break;  /* to avoid warnings */
+      case '[': {
+        int nestedSep = skip_sep(ls);
+        if (nestedSep >=0) {
+          read_long_comment(ls, nestedSep);
+        }
+        break;
+      }
+      case ']': {
+        if (skip_sep(ls) == sep) {
+          save_and_next(ls);  /* skip 2nd `]' */
+          return;
+        }
+        break;
+      }
+      case '\n': case '\r': {
+        save(ls, '\n');
+        inclinenumber(ls);
+        luaZ_resetbuffer(ls->buff);  /* avoid wasting space */
+        break;
+      }
+      default: {
+        next(ls);
+      }
+    }
+  }
+}
+
 
 static void escerror (LexState *ls, int *c, int n, const char *msg) {
   int i;
@@ -452,7 +489,8 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           int sep = skip_sep(ls);
           luaZ_resetbuffer(ls->buff);  /* `skip_sep' may dirty the buffer */
           if (sep >= 0) {
-            read_long_string(ls, NULL, sep);  /* skip long comment */
+            read_long_comment(ls, sep);
+            //read_long_string(ls, NULL, sep);  /* skip long comment */
             luaZ_resetbuffer(ls->buff);  /* previous call may dirty the buff. */
             break;
           }
