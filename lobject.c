@@ -70,7 +70,7 @@ int luaO_ceillog2 (unsigned int x) {
 }
 
 
-lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2) {
+lua_Number luaO_arith (lua_State *L, int op, lua_Number v1, lua_Number v2) {
   switch (op) {
     case LUA_OPADD: return luai_numadd(NULL, v1, v2);
     case LUA_OPSUB: return luai_numsub(NULL, v1, v2);
@@ -89,6 +89,9 @@ lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2) {
     case LUA_OPROTR: return luai_numrotr(NULL, v1, v2);
     case LUA_OPUNM:  return luai_numunm(NULL, v1);
     case LUA_OPBNOT: return luai_numbnot(NULL, v1);
+    case LUA_OPPEEK: return luai_numpeek(L, v1);
+    case LUA_OPPEEK2: return luai_numpeek2(L, v1);
+    case LUA_OPPEEK4: return luai_numpeek4(L, v1);
     default: lua_assert(0); return 0;
   }
 }

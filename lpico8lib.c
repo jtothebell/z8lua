@@ -326,7 +326,7 @@ static int pico8_split(lua_State *l) {
     for (char const *parser = haystack; parser < end; ) {
         lua_Number num;
         char const *next = size ? parser + size
-                         : needle ? strchr(parser, needle) : parser + 1;
+                         : needle ? (char const*)memchr(parser, needle, end - parser) : parser + 1;
         if (!next || next > end)
             next = haystack + hlen;
         char saved = *next; // temporarily put a null terminator here
@@ -334,7 +334,7 @@ static int pico8_split(lua_State *l) {
         if (convert && luaO_str2d(parser, next - parser, &num))
             lua_pushnumber(l, num);
         else
-            lua_pushstring(l, parser);
+            lua_pushlstring(l, parser, next - parser);
         *(char *)next = saved;
         lua_rawseti(l, -2, int(++count));
         parser = next + (!size && needle);
