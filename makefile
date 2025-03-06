@@ -28,9 +28,12 @@ MYLIBS=
 
 
 # enable Linux goodies
+ifneq ($(OS),Windows_NT)
 MYCFLAGS= $(LOCAL) -DLUA_USE_LINUX
 MYLDFLAGS= -Wl,-E
-MYLIBS= -ldl -lreadline -lhistory
+MYLIBS= -ldl
+endif
+MYLIBS= -lreadline -lhistory
 
 
 

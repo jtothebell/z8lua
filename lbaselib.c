@@ -194,15 +194,15 @@ static int luaB_type (lua_State *L) {
   return 1;
 }
 
+
 static int _empty(lua_State *L) { return 0; }
 
 
 static int pairsmeta (lua_State *L, const char *method, int iszero,
                       lua_CFunction iter) {
-  //pico 8 returns an empty function if nil is passed
+  // PICO-8 0.2.0 changelog: pairs(nil) returns an empty function
   if (lua_isnil(L, 1)) {
-    lua_pushcfunction(L, _empty); 
-
+    lua_pushcfunction(L, _empty);
     return 1;
   }
 

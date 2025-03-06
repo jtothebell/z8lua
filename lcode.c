@@ -715,7 +715,9 @@ static int constfolding (OpCode op, expdesc *e1, expdesc *e2) {
   if (!isnumeral(e1) || !isnumeral(e2)) return 0;
   if ((op == OP_DIV || op == OP_MOD) && e2->u.nval == 0)
     return 0;  /* do not attempt to divide by 0 */
-  r = luaO_arith(op - OP_ADD + LUA_OPADD, e1->u.nval, e2->u.nval);
+  if (op == OP_PEEK || op == OP_PEEK2 || op == OP_PEEK4)
+    return 0;  /* const folding cannot work with peek */
+  r = luaO_arith(NULL, op - OP_ADD + LUA_OPADD, e1->u.nval, e2->u.nval);
   e1->u.nval = r;
   return 1;
 }

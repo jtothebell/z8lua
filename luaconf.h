@@ -585,9 +585,9 @@
 #define luai_numrotl(L,a,b)	(l_mathop(rotl)((a),int((b))))
 #define luai_numrotr(L,a,b)	(l_mathop(rotr)((a),int((b))))
 #define luai_numbnot(L,a)	(~(a))
-#define luai_numpeek(L,a)	(lua_peek(L,a,1))
-#define luai_numpeek2(L,a)	(lua_peek(L,a,2))
-#define luai_numpeek4(L,a)	(lua_peek(L,a,4))
+#define luai_numpeek(L,a)	(luaV_peek(L,a,1))
+#define luai_numpeek2(L,a)	(luaV_peek(L,a,2))
+#define luai_numpeek4(L,a)	(luaV_peek(L,a,4))
 
 #define lua_number2str(s,n) [&]() { \
   int i = sprintf(s, "%1.4f", (double)n); \

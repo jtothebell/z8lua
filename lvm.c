@@ -108,6 +108,18 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 
 
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+  // PICO-8 0.2.5 changelog: sub(str,pos,pos) can be written as str[pos]
+  if (ttisstring(t)) {
+    const char *s = svalue(t);
+    size_t ls = tsvalue(t)->len;
+    int k = cast_int(nvalue(key));
+    size_t idx = k > 0 ? k - 1 : ls + k;
+    if (idx >= ls)
+      setnilvalue(val);
+    else
+      setsvalue2s(L, val, luaS_newlstr(L, s + idx, 1));
+    return;
+  }
   int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
@@ -208,7 +220,7 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
 
 #define PEEK(ram, address) (ram && (address < 0x8000) ? ram[address] : 0)
 
-static z8::fix32 lua_peek(struct lua_State *L, z8::fix32 a, int count)
+lua_Number luaV_peek(struct lua_State *L, lua_Number a, int count)
 {
   unsigned char const *p = G(L)->pico8memory;
   int address = int(a) & 0x7fff;
@@ -224,7 +236,7 @@ static z8::fix32 lua_peek(struct lua_State *L, z8::fix32 a, int count)
       ret |= PEEK(p, address) << 16;
       break;
   }
-  return z8::fix32::frombits(ret);
+  return lua_Number::frombits(ret);
 }
 
 
@@ -385,7 +397,7 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
   const TValue *b, *c;
   if ((b = luaV_tonumber(rb, &tempb)) != NULL &&
       (c = luaV_tonumber(rc, &tempc)) != NULL) {
-    lua_Number res = luaO_arith(op - TM_ADD + LUA_OPADD, nvalue(b), nvalue(c));
+    lua_Number res = luaO_arith(L, op - TM_ADD + LUA_OPADD, nvalue(b), nvalue(c));
     setnvalue(ra, res);
   }
   else if (!call_binTM(L, rb, rc, ra, op))

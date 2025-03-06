@@ -41,4 +41,5 @@ LUAI_FUNC void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                            const TValue *rc, TMS op);
 LUAI_FUNC void luaV_objlen (lua_State *L, StkId ra, const TValue *rb);
 
+LUAI_FUNC lua_Number luaV_peek(struct lua_State *L, lua_Number a, int count);
 #endif
