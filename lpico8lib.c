@@ -267,8 +267,9 @@ static int pico8_tonum(lua_State *l) {
 }
 
 static int pico8_chr(lua_State *l) {
-    // PICO-8 seems to top out at allowing 248 arguments
-    char s[248];
+    // PICO-8 peek returns at most 8192 values and I have observed at least one cart
+    // that approaches this limit. I think this is a decent buffer size
+    char s[8192];
     size_t numargs = lua_gettop(l);
     if (numargs > sizeof(s)) numargs = sizeof(s);
     for (size_t i = 0; i < numargs; i++) {
