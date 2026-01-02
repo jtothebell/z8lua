@@ -282,7 +282,12 @@ static int pico8_ord(lua_State *l) {
     size_t len;
     int n = 0;
     int count = 1;
-    char const *s = luaL_checklstring(l, 1, &len);
+    // PICO-8 returns nil if first arg is not a string
+    if (lua_isnoneornil(l, 1) || !lua_isstring(l, 1)) {
+        lua_pushnil(l);
+        return 1;
+    }
+    char const *s = lua_tolstring(l, 1, &len);
     if (!lua_isnone(l, 3)) {
         if (!lua_isnumber(l, 3)) return 0;
         count = int(lua_tonumber(l, 3));
