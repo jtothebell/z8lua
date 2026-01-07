@@ -128,20 +128,6 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       const TValue *res = luaH_get(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is not nil? */
           (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        // PICO-8 compatibility: When key lookup fails in a table without __index metatable,
-        // fall back to the global table. This supports the _ENV=obj pattern used by carts
-        // to access object properties directly while still having access to global functions.
-        if (ttisnil(res) && ttisstring(key)) {
-          Table *reg = hvalue(&G(L)->l_registry);
-          const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
-          if (ttistable(gt) && hvalue(gt) != h) {  /* don't recurse if already in globals */
-            const TValue *globalRes = luaH_get(hvalue(gt), key);
-            if (!ttisnil(globalRes)) {
-              setobj2s(L, val, globalRes);
-              return;
-            }
-          }
-        }
         setobj2s(L, val, res);
         return;
       }
@@ -651,6 +637,21 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
         Protect(luaV_gettable(L, cl->upvals[b]->v, RKC(i), ra));
+        // PICO-8 compatibility: When _ENV is modified (e.g. _ENV=obj) and a global
+        // lookup fails, fall back to the cart sandbox. This supports the pattern
+        // where carts set _ENV to access object properties while still needing
+        // access to API functions like circfill, spr, etc.
+        if (ttisnil(ra) && ttisstring(RKC(i))) {
+          Table *reg = hvalue(&G(L)->l_registry);
+          TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
+          const TValue *sandbox = luaH_getstr(reg, sandboxKey);
+          if (ttistable(sandbox)) {
+            const TValue *sandboxRes = luaH_get(hvalue(sandbox), RKC(i));
+            if (!ttisnil(sandboxRes)) {
+              setobj2s(L, ra, sandboxRes);
+            }
+          }
+        }
       )
       vmcase(OP_GETTABLE,
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
