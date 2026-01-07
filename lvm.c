@@ -128,6 +128,20 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       const TValue *res = luaH_get(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is not nil? */
           (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
+        // PICO-8 compatibility: When key lookup fails in a table without __index metatable,
+        // fall back to the global table. This supports the _ENV=obj pattern used by carts
+        // to access object properties directly while still having access to global functions.
+        if (ttisnil(res) && ttisstring(key)) {
+          Table *reg = hvalue(&G(L)->l_registry);
+          const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
+          if (ttistable(gt) && hvalue(gt) != h) {  /* don't recurse if already in globals */
+            const TValue *globalRes = luaH_get(hvalue(gt), key);
+            if (!ttisnil(globalRes)) {
+              setobj2s(L, val, globalRes);
+              return;
+            }
+          }
+        }
         setobj2s(L, val, res);
         return;
       }
