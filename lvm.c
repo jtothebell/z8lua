@@ -637,6 +637,25 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
         Protect(luaV_gettable(L, cl->upvals[b]->v, RKC(i), ra));
+        // ATTN: I don't think this is actually what PICO-8 does, but I'm not sure
+        // what PICO-8 is actually doing, and this appears to make carts compatible.
+        // Essentially the behavior I observed in Ex-Terra was that the _ENV was modified
+        // locally, but `circfill` was still accessible.
+        // oddly enough, `rrect` was NOT accessible, but I suspect that is an oversight in
+        // an allowlist or something. Again, not really sure, don't really love this 
+        // solution, but I guess it works for now.
+        // Note that this was observed in Jan 2026, PICO-8 version 0.2.7, Ex-Terra dated 2024-09-23 fucntion called draw_gbullets_old
+        if (ttisnil(ra) && ttisstring(RKC(i))) {
+          Table *reg = hvalue(&G(L)->l_registry);
+          TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
+          const TValue *sandbox = luaH_getstr(reg, sandboxKey);
+          if (ttistable(sandbox)) {
+            const TValue *sandboxRes = luaH_get(hvalue(sandbox), RKC(i));
+            if (!ttisnil(sandboxRes)) {
+              setobj2s(L, ra, sandboxRes);
+            }
+          }
+        }
       )
       vmcase(OP_GETTABLE,
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
