@@ -1010,6 +1010,7 @@ static BinOpr getbinopr (int op) {
     case '\\': return OPR_IDIV;
     case '&': return OPR_BAND;
     case '|': return OPR_BOR;
+    case '~': return OPR_BXOR; //PICO-8 0.2.5 added ~ as bxor
     case TK_BXOR: return OPR_BXOR;
     case TK_SHL: return OPR_SHL;
     case TK_SHR: return OPR_SHR;
