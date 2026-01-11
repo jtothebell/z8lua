@@ -55,6 +55,7 @@ typedef struct BlockCnt {
 */
 static void statement (LexState *ls);
 static void expr (LexState *ls, expdesc *v);
+static void shortprint (LexState *ls, expdesc *v);
 
 
 static void anchor_token (LexState *ls) {
@@ -890,6 +891,10 @@ static void primaryexp (LexState *ls, expdesc *v) {
       singlevar(ls, v);
       return;
     }
+    case TK_PRINT: {
+      shortprint(ls, v);
+      return;
+    }
     default: {
       luaX_syntaxerror(ls, "unexpected symbol");
     }
@@ -1608,17 +1613,16 @@ static void retstat (LexState *ls) {
 }
 
 
-static void shortprint (LexState *ls) {
+static void shortprint (LexState *ls, expdesc *f) {
   int line = ls->linenumber;
   FuncState *fs = ls->fs;
 
   /* same as suffixedexp() except we push "print" first */
-  expdesc f;
   TString *n = luaS_new(ls->L, "print");
   ls->t.seminfo.ts = n;
   ls->t.token = TK_NAME;
-  singlevar(ls, &f);
-  luaK_exp2nextreg(fs, &f);
+  singlevar(ls, f);
+  luaK_exp2nextreg(fs, f);
 
   /* now we do the same as funcargs() */
   expdesc args;
@@ -1629,12 +1633,13 @@ static void shortprint (LexState *ls) {
     luaK_setmultret(fs, &args);
   }
 
-  if (!testnext(ls, TK_EOS)) /* check that we are at EOL or EOS */
-    check_match(ls, TK_EOL, '?', line);
+  /* PICO-8: removed check for EOL so it can be used as an expression */
+  /* if (!testnext(ls, TK_EOS)) check_match(ls, TK_EOL, '?', line); */
+  testnext(ls, TK_EOL);
 
   int base, nparams;
-  lua_assert(f.k == VNONRELOC);
-  base = f.u.info;  /* base register for call */
+  lua_assert(f->k == VNONRELOC);
+  base = f->u.info;  /* base register for call */
   if (hasmultret(args.k))
     nparams = LUA_MULTRET;  /* open call */
   else {
@@ -1643,9 +1648,9 @@ static void shortprint (LexState *ls) {
     nparams = fs->freereg - (base+1);
   }
 
-  init_exp(&f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
+  init_exp(f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
   luaK_fixline(fs, line);
-  fs->freereg = fs->nactvar;
+  /* fs->freereg = fs->nactvar;  -- removed so result is preserved */
 }
 
 
@@ -1655,10 +1660,6 @@ static void statement (LexState *ls) {
   switch (ls->t.token) {
     case ';': {  /* stat -> ';' (empty statement) */
       luaX_next(ls);  /* skip ';' */
-      break;
-    }
-    case TK_PRINT: {
-      shortprint(ls);  /* stat -> shortprint (on a single line) */
       break;
     }
     case TK_IF: {  /* stat -> ifstat */
