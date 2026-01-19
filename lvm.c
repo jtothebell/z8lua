@@ -659,6 +659,19 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_GETTABLE,
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
+        // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP
+        // We need to check the sandbox fallback here as well
+        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i))) {
+          Table *reg = hvalue(&G(L)->l_registry);
+          TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
+          const TValue *sandbox = luaH_getstr(reg, sandboxKey);
+          if (ttistable(sandbox)) {
+            const TValue *sandboxRes = luaH_get(hvalue(sandbox), RKC(i));
+            if (!ttisnil(sandboxRes)) {
+              setobj2s(L, ra, sandboxRes);
+            }
+          }
+        }
       )
       vmcase(OP_SETTABUP,
         int a = GETARG_A(i);
