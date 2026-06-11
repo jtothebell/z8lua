@@ -658,10 +658,14 @@ void luaV_execute (lua_State *L) {
         }
       )
       vmcase(OP_GETTABLE,
-        Protect(luaV_gettable(L, RB(i), RKC(i), ra));
-        // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP
-        // We need to check the sandbox fallback here as well
-        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i))) {
+        StkId rb = RB(i);
+        Protect(luaV_gettable(L, rb, RKC(i), ra));
+        // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP.
+        // Only fall back to the cart sandbox for lookups on _ENV itself — not for arbitrary table fields
+        // (e.g. entity.dd must stay nil when missing, not resolve to a global function named dd).
+        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(rb) &&
+            cl->nupvalues > 0 && ttistable(cl->upvals[0]->v) &&
+            hvalue(rb) == hvalue(cl->upvals[0]->v)) {
           Table *reg = hvalue(&G(L)->l_registry);
           TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
           const TValue *sandbox = luaH_getstr(reg, sandboxKey);
