@@ -1308,17 +1308,23 @@ static void whilestat (LexState *ls, int line) {
   enterblock(fs, &bl, 1);
   int short_while = ls->t.token != TK_DO && ls->t.token != TK_EOS
                  && ls->braces == 0 && line == ls->linenumber;
-  if (short_while)
+  if (short_while) {
+    BlockCnt bl2;
     ls->emiteol = 1;
-  else
+    enterblock(fs, &bl2, 0);
+    shortif_statlist(ls, line);  /* body stays on the while's source line only */
+    leaveblock(fs);
+  }
+  else {
     checknext(ls, TK_DO);
-  block(ls);
+    block(ls);
+  }
   luaK_jumpto(fs, whileinit);
   if (!short_while)
     check_match(ls, TK_END, TK_WHILE, line);
   else if (ls->t.token == TK_EOL || ls->t.token == TK_EOS)
     luaX_next(ls);  /* eat EOL or EOS */
-  else if (block_follow(ls, 1))
+  else if (block_follow(ls, 1) || ls->linenumber > line)
     ls->emiteol = 0;  /* close the short WHILE */
   else
     check_match(ls, TK_EOL, TK_WHILE, line);  /* we expected EOL */
