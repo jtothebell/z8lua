@@ -617,6 +617,18 @@ static void statlist (LexState *ls) {
 }
 
 
+static void shortif_statlist (LexState *ls, int line) {
+  /* PICO-8 shorthand if: body stays on the if's source line only */
+  while (!block_follow(ls, 1) && ls->linenumber == line) {
+    if (ls->t.token == TK_RETURN) {
+      statement(ls);
+      return;
+    }
+    statement(ls);
+  }
+}
+
+
 static void fieldsel (LexState *ls, expdesc *v) {
   /* fieldsel -> ['.' | ':'] NAME */
   FuncState *fs = ls->fs;
@@ -1474,7 +1486,10 @@ static int test_then_block (LexState *ls, int *escapelist) {
     enterblock(fs, &bl, 0);
     jf = v.f;
   }
-  statlist(ls);  /* `then' part */
+  if (short_if)
+    shortif_statlist(ls, line);  /* `then' part (current line only) */
+  else
+    statlist(ls);  /* `then' part */
   leaveblock(fs);
   if (ls->t.token == TK_ELSE ||
       ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
@@ -1498,7 +1513,7 @@ static void ifstat (LexState *ls, int line) {
   else {
     if (ls->t.token == TK_EOL || ls->t.token == TK_EOS)
       luaX_next(ls);  /* eat EOL or EOS */
-    else if (block_follow(ls, 1))
+    else if (block_follow(ls, 1) || ls->linenumber > line)
       ls->emiteol = 0;  /* close the short IF */
     else
       check_match(ls, TK_EOL, TK_IF, line);  /* we expected EOL */
