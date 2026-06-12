@@ -12,6 +12,7 @@
 
 #include <cctype>
 #include <cstring>
+#include <stdlib.h>
 
 #define lpico8lib_c
 #define LUA_LIB
@@ -267,15 +268,17 @@ static int pico8_tonum(lua_State *l) {
 }
 
 static int pico8_chr(lua_State *l) {
-    // PICO-8 peek returns at most 8192 values and I have observed at least one cart
-    // that approaches this limit. I think this is a decent buffer size
-    char s[8192];
+    /* PICO-8 v0.2.5+ allows peek/poke/chr up to 32767 bytes (was 8192) */
+    enum { PICO8_MAX_CHR = 32767 };
     size_t numargs = lua_gettop(l);
-    if (numargs > sizeof(s)) numargs = sizeof(s);
+    if (numargs > PICO8_MAX_CHR) numargs = PICO8_MAX_CHR;
+    char *s = (char *)malloc(numargs ? numargs : 1);
+    if (s == NULL) return luaL_error(l, "not enough memory");
     for (size_t i = 0; i < numargs; i++) {
         s[i] = (char)(uint8_t)lua_tonumber(l, i + 1);
     }
     lua_pushlstring(l, s, numargs);
+    free(s);
     return 1;
 }
 
