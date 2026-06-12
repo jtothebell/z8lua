@@ -91,8 +91,6 @@ static int pico8_atan2(lua_State *l) {
     }
     if (x.bits() < 0) bits = 0x8000 - bits;
     if (y.bits() > 0) bits = -bits & 0xffff;
-    // Emulate a bug in PICO-8 with e.g. atan2(1, 0x8000)
-    if (x && y.bits() == int32_t(0x80000000)) bits = -bits & 0xffff;
     lua_pushnumber(l, lua_Number::frombits(bits));
     return 1;
 }
