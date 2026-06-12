@@ -14,6 +14,7 @@
 
 #include "lua.h"
 
+#include "luaconf.h"
 #include "ldebug.h"
 #include "ldo.h"
 #include "lfunc.h"
@@ -30,6 +31,30 @@
 
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
+
+
+/*
+** True when GETTABLE register B is the function's visible _ENV (local/param).
+** Used to fall back to the cart sandbox for globals when _ENV is shadowed
+** (e.g. shrinko8's function foo(p, _ENV) pattern).
+*/
+static int luaV_is_env_table (LClosure *cl, int pc, int b) {
+  const char *name = luaF_getlocalname(cl->p, b + 1, pc);
+  return name != NULL && strcmp(name, LUA_ENV) == 0;
+}
+
+
+static void luaV_sandbox_getfallback (lua_State *L, StkId val, const TValue *key) {
+  if (!ttisstring(key))
+    return;
+  Table *reg = hvalue(&G(L)->l_registry);
+  const TValue *sandbox = luaH_getstr(reg, luaS_newliteral(L, "__PICO8_SANDBOX"));
+  if (!ttistable(sandbox))
+    return;
+  const TValue *sandboxRes = luaH_get(hvalue(sandbox), key);
+  if (!ttisnil(sandboxRes))
+    setobj2s(L, val, sandboxRes);
+}
 
 
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
@@ -637,45 +662,24 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
         Protect(luaV_gettable(L, cl->upvals[b]->v, RKC(i), ra));
-        // ATTN: I don't think this is actually what PICO-8 does, but I'm not sure
-        // what PICO-8 is actually doing, and this appears to make carts compatible.
-        // Essentially the behavior I observed in Ex-Terra was that the _ENV was modified
-        // locally, but `circfill` was still accessible.
-        // oddly enough, `rrect` was NOT accessible, but I suspect that is an oversight in
-        // an allowlist or something. Again, not really sure, don't really love this 
-        // solution, but I guess it works for now.
-        // Note that this was observed in Jan 2026, PICO-8 version 0.2.7, Ex-Terra dated 2024-09-23 fucntion called draw_gbullets_old
-        if (ttisnil(ra) && ttisstring(RKC(i))) {
-          Table *reg = hvalue(&G(L)->l_registry);
-          TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
-          const TValue *sandbox = luaH_getstr(reg, sandboxKey);
-          if (ttistable(sandbox)) {
-            const TValue *sandboxRes = luaH_get(hvalue(sandbox), RKC(i));
-            if (!ttisnil(sandboxRes)) {
-              setobj2s(L, ra, sandboxRes);
-            }
-          }
-        }
+        // When _ENV is the function upvalue, fall back to the cart sandbox for globals
+        // (e.g. for _ENV override in for loops). See OP_GETTABLE for shadowed _ENV locals.
+        if (ttisnil(ra))
+          luaV_sandbox_getfallback(L, ra, RKC(i));
       )
       vmcase(OP_GETTABLE,
         StkId rb = RB(i);
+        int pc = pcRel(ci->u.l.savedpc, cl->p);
+        int b = GETARG_B(i);
         Protect(luaV_gettable(L, rb, RKC(i), ra));
-        // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP.
-        // Only fall back to the cart sandbox for lookups on _ENV itself — not for arbitrary table fields
-        // (e.g. entity.dd must stay nil when missing, not resolve to a global function named dd).
-        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(rb) &&
-            cl->nupvalues > 0 && ttistable(cl->upvals[0]->v) &&
-            hvalue(rb) == hvalue(cl->upvals[0]->v)) {
-          Table *reg = hvalue(&G(L)->l_registry);
-          TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
-          const TValue *sandbox = luaH_getstr(reg, sandboxKey);
-          if (ttistable(sandbox)) {
-            const TValue *sandboxRes = luaH_get(hvalue(sandbox), RKC(i));
-            if (!ttisnil(sandboxRes)) {
-              setobj2s(L, ra, sandboxRes);
-            }
-          }
-        }
+        // When _ENV is overridden (local/param/for-loop), lookups use OP_GETTABLE.
+        // Fall back to the cart sandbox only for _ENV-indexed globals, not field access
+        // (e.g. entity.dd must stay nil when missing, not resolve to a global named dd).
+        if (ttisnil(ra) && ttisstring(RKC(i)) &&
+            (luaV_is_env_table(cl, pc, b) ||
+             (ttistable(rb) && cl->nupvalues > 0 && ttistable(cl->upvals[0]->v) &&
+              hvalue(rb) == hvalue(cl->upvals[0]->v))))
+          luaV_sandbox_getfallback(L, ra, RKC(i));
       )
       vmcase(OP_SETTABUP,
         int a = GETARG_A(i);
