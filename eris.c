@@ -522,19 +522,19 @@ write_int64_t(Info *info, int64_t value) {
   write_uint64_t(info, (uint64_t)value);
 }
 
-static void
-write_float32(Info *info, float value) {
-  uint32_t rep;
-  memcpy(&rep, &value, sizeof(float));
-  write_uint32_t(info, rep);
-}
+// static void
+// write_float32(Info *info, float value) {
+//   uint32_t rep;
+//   memcpy(&rep, &value, sizeof(float));
+//   write_uint32_t(info, rep);
+// }
 
-static void
-write_float64(Info *info, double value) {
-  uint64_t rep;
-  memcpy(&rep, &value, sizeof(double));
-  write_uint64_t(info, rep);
-}
+// static void
+// write_float64(Info *info, double value) {
+//   uint64_t rep;
+//   memcpy(&rep, &value, sizeof(double));
+//   write_uint64_t(info, rep);
+// }
 
 /* Note regarding the following: any decent compiler should be able
  * to reduce these to just the write call, since sizeof is constant. */
@@ -646,21 +646,21 @@ read_int64_t(Info *info) {
   return (int64_t)read_uint64_t(info);
 }
 
-static float
-read_float32(Info *info) {
-  float value;
-  uint32_t rep = read_uint32_t(info);
-  memcpy(&value, &rep, sizeof(float));
-  return value;
-}
+// static float
+// read_float32(Info *info) {
+//   float value;
+//   uint32_t rep = read_uint32_t(info);
+//   memcpy(&value, &rep, sizeof(float));
+//   return value;
+// }
 
-static double
-read_float64(Info *info) {
-  double value;
-  uint64_t rep = read_uint64_t(info);
-  memcpy(&value, &rep, sizeof(double));
-  return value;
-}
+// static double
+// read_float64(Info *info) {
+//   double value;
+//   uint64_t rep = read_uint64_t(info);
+//   memcpy(&value, &rep, sizeof(double));
+//   return value;
+// }
 
 /* Note regarding the following: unlike with writing the sizeof check will be
  * impossible to optimize away, since it depends on the input; however, the
