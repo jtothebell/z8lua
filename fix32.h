@@ -223,7 +223,7 @@ struct fix32
         return frombits((uint32_t(x.bits()) >> y) | (x.bits() << (32 - y)));
     }
 
-#ifdef _3DS
+#ifdef __3DS__
     inline explicit fix32(size_t x) : m_bits(int32_t(x << 16)) {}
 
     inline fix32(int x)  : m_bits(int(x << 16)) {}
