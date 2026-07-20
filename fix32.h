@@ -123,19 +123,19 @@ struct fix32
     fix32 operator /(fix32 x) const
     {
         // This special case ensures 0x8000/0x1 = 0x8000, not 0x8000.0001
-        if (x.m_bits == 0x1'0000)
+        if (x.m_bits == 0x10000)
             return *this;
 
         if (x.m_bits)
         {
             using std::abs;
-            int64_t result = int64_t(m_bits) * 0x1'0000 / x.m_bits;
-            if (abs(result) <= 0x7fff'ffffu)
+            int64_t result = int64_t(m_bits) * 0x10000 / x.m_bits;
+            if (abs(result) <= 0x7fffffffu)
                 return frombits(int32_t(result));
         }
 
         // Return 0x8000.0001 (not 0x8000.0000) for -Inf, just like PICO-8
-        return frombits((m_bits ^ x.m_bits) >= 0 ? 0x7fff'ffffu : 0x8000'0001u);
+        return frombits((m_bits ^ x.m_bits) >= 0 ? 0x7fffffffu : 0x80000001u);
     }
 
     fix32 operator %(fix32 x) const
@@ -178,8 +178,8 @@ struct fix32
     static inline fix32 max(fix32 a, fix32 b) { return a > b ? a : b; }
 
     static inline fix32 ceil(fix32 x) { return -floor(-x); }
-    static inline fix32 modf(fix32 x) { return frombits(x.m_bits & 0x0000'ffff); }
-    static inline fix32 floor(fix32 x) { return frombits(x.m_bits & 0xffff'0000); }
+    static inline fix32 modf(fix32 x) { return frombits(x.m_bits & 0x0000ffff); }
+    static inline fix32 floor(fix32 x) { return frombits(x.m_bits & 0xffff0000); }
 
     static fix32 pow(fix32 x, fix32 y) 
     {
