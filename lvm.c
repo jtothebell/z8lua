@@ -645,7 +645,9 @@ void luaV_execute (lua_State *L) {
         // an allowlist or something. Again, not really sure, don't really love this 
         // solution, but I guess it works for now.
         // Note that this was observed in Jan 2026, PICO-8 version 0.2.7, Ex-Terra dated 2024-09-23 fucntion called draw_gbullets_old
-        if (ttisnil(ra) && ttisstring(RKC(i))) {
+        if (ttisnil(ra) && ttisstring(RKC(i)) &&
+            cl->p->upvalues[b].name != NULL &&
+            strcmp(getstr(cl->p->upvalues[b].name), LUA_ENV) == 0) {
           Table *reg = hvalue(&G(L)->l_registry);
           TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
           const TValue *sandbox = luaH_getstr(reg, sandboxKey);
@@ -661,7 +663,10 @@ void luaV_execute (lua_State *L) {
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
         // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP
         // We need to check the sandbox fallback here as well
-        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i))) {
+        const char *tableName = luaF_getlocalname(cl->p, GETARG_B(i) + 1,
+                                                  pcRel(ci->u.l.savedpc, cl->p));
+        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i)) &&
+            tableName != NULL && strcmp(tableName, LUA_ENV) == 0) {
           Table *reg = hvalue(&G(L)->l_registry);
           TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
           const TValue *sandbox = luaH_getstr(reg, sandboxKey);
