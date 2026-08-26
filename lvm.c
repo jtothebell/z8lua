@@ -645,7 +645,19 @@ void luaV_execute (lua_State *L) {
         // an allowlist or something. Again, not really sure, don't really love this 
         // solution, but I guess it works for now.
         // Note that this was observed in Jan 2026, PICO-8 version 0.2.7, Ex-Terra dated 2024-09-23 fucntion called draw_gbullets_old
-        if (ttisnil(ra) && ttisstring(RKC(i))) {
+        //
+        // BUGFIX: this must only fire for genuine environment-like lookups
+        // (e.g. a loop-local copy of _ENV), never for ordinary OOP field
+        // access such as `self.foo`. Real _ENV/sandbox tables never have a
+        // metatable, while every actor object in cart code that uses
+        // setmetatable() for inheritance does. Without this guard, any nil
+        // instance field whose name collides with a cart-level global (e.g.
+        // a field called `collected` on an object, next to a global table
+        // also named `collected`) gets silently replaced by that global,
+        // producing corrupted-looking object state with no error at the
+        // point of corruption.
+        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(cl->upvals[b]->v)
+            && hvalue(cl->upvals[b]->v)->metatable == NULL) {
           Table *reg = hvalue(&G(L)->l_registry);
           TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
           const TValue *sandbox = luaH_getstr(reg, sandboxKey);
@@ -661,7 +673,12 @@ void luaV_execute (lua_State *L) {
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
         // When _ENV is overridden (e.g., in a for loop), lookups use OP_GETTABLE instead of OP_GETTABUP
         // We need to check the sandbox fallback here as well
-        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i))) {
+        //
+        // BUGFIX: same guard as OP_GETTABUP above -- restrict to tables
+        // without a metatable so this never shadows ordinary object field
+        // access. See comment there for the failure mode this prevents.
+        if (ttisnil(ra) && ttisstring(RKC(i)) && ttistable(RB(i))
+            && hvalue(RB(i))->metatable == NULL) {
           Table *reg = hvalue(&G(L)->l_registry);
           TString *sandboxKey = luaS_newliteral(L, "__PICO8_SANDBOX");
           const TValue *sandbox = luaH_getstr(reg, sandboxKey);
