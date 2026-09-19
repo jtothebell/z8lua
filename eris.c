@@ -2020,8 +2020,20 @@ u_thread(Info *info) {                                                 /* ... */
       lua_pop(info->L, 1);                                  /* ... thread tbl */
     }
 
-    /* Store open upvalue in table for future references. */
+    /* Remember the open upvalue even when its first closure is restored
+     * after this thread. A temporary Lua closure anchors the UpVal and fits
+     * the existing UVTOCL/UVTONU lookup used by u_closure. */
     LOCK(thread);
+    {
+      Closure *anchor = eris_newLclosure(info->L, 1);
+      anchor->l.p = eris_newproto(info->L);
+      anchor->l.upvals[0] = nuv;
+      eris_setclLvalue(info->L, info->L->top, anchor);
+      eris_incr_top(info->L);
+      lua_rawseti(info->L, -2, UVTOCL);
+      lua_pushinteger(info->L, 1);
+      lua_rawseti(info->L, -2, UVTONU);
+    }
     lua_pop(info->L, 1);                                        /* ... thread */
     poppath(info);
     UNLOCK(thread);
